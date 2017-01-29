@@ -122,15 +122,15 @@ forceinline static void chacha20_double_round(__m256i *pa, __m256i *pb, __m256i 
 }
 
 static __m128i load_i128_from_bytes(const void* bytes) {
-    __m128i vector;
-    memcpy(&vector, bytes, 16);
-    return vector;
+    return _mm_loadu_si128((__m128i*)bytes);
 }
 
 static __m256i load_i256_from_bytes(const void* bytes) {
-    __m256i vector;
-    memcpy(&vector, bytes, 32);
-    return vector;
+    return _mm256_loadu_si256((__m256i*)bytes);
+}
+
+static void store_i256_to_bytes(const void* bytes, __m256i value) {
+    _mm256_storeu_si256((__m256i*)bytes, value);
 }
 
 static __m256i load_i256_with_nonce_and_counter(
@@ -189,10 +189,10 @@ void mmcrypto_chacha20(
         f1 = xor_pi32(f1, load_i256_from_bytes(in + 32));
         f2 = xor_pi32(f2, load_i256_from_bytes(in + 64));
         f3 = xor_pi32(f3, load_i256_from_bytes(in + 96));
-        memcpy(out,      &f0, 32);
-        memcpy(out + 32, &f1, 32);
-        memcpy(out + 64, &f2, 32);
-        memcpy(out + 96, &f3, 32);
+        store_i256_to_bytes(out,      f0);
+        store_i256_to_bytes(out + 32, f1);
+        store_i256_to_bytes(out + 64, f2);
+        store_i256_to_bytes(out + 96, f3);
 
         /* Increment counter */
         im3 = _mm256_add_epi64(im3, _mm256_set_epi64x(0,2,0,2));
@@ -216,10 +216,10 @@ void mmcrypto_chacha20(
         __m256i f2 = _mm256_permute2x128_si256(v0, v1, _MM_SHUFFLE(0,3,0,1));
         __m256i f3 = _mm256_permute2x128_si256(v2, v3, _MM_SHUFFLE(0,3,0,1));
         uint8_t f[128] = {};
-        memcpy(f,      &f0, 32);
-        memcpy(f + 32, &f1, 32);
-        memcpy(f + 64, &f2, 32);
-        memcpy(f + 96, &f3, 32);
+        store_i256_to_bytes(f,      f0);
+        store_i256_to_bytes(f + 32, f1);
+        store_i256_to_bytes(f + 64, f2);
+        store_i256_to_bytes(f + 96, f3);
 
         for (size_t i = 0; i < in_length; i++) {
             out[i] = f[i] ^ in[i];
